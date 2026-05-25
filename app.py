@@ -7,7 +7,8 @@ from flask import Flask, render_template, request, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 
 from src import config
-from src.predict import predict_image, load_trained_model
+from src.gradcam import generate_gradcam
+from src.predict import load_trained_model, predict_image
 
 app = Flask(__name__)
 
@@ -55,6 +56,8 @@ def index():
         "error": None,
         "uploaded_image_url": None,
         "uploaded_filename": None,
+        "gradcam_url": None,
+        "gradcam_warning": None,
     }
 
     if request.method == "POST":
@@ -72,9 +75,6 @@ def index():
             context["error"] = "Định dạng không hỗ trợ. Chỉ chấp nhận JPG, JPEG hoặc PNG."
             return render_template("index.html", **context)
 
-        saved_path = None
-        unique_name = None
-
         try:
             saved_path, unique_name = save_uploaded_file(uploaded)
             model = get_cached_model()
@@ -83,6 +83,17 @@ def index():
             context["result"] = prediction
             context["uploaded_filename"] = uploaded.filename
             context["uploaded_image_url"] = url_for("uploaded_file", filename=unique_name)
+
+            try:
+                gradcam_filename = generate_gradcam(saved_path, model=model)
+                context["gradcam_url"] = url_for("output_file", filename=gradcam_filename)
+            except Exception as gradcam_exc:
+                app.logger.warning("Grad-CAM generation failed: %s", gradcam_exc)
+                context["gradcam_warning"] = (
+                    "Không thể tạo ảnh Grad-CAM cho ảnh này. "
+                    "Kết quả dự đoán chính vẫn hợp lệ."
+                )
+
         except FileNotFoundError:
             context["error"] = (
                 "Chưa tìm thấy model đã train. Vui lòng chạy lệnh: python -m src.train"
@@ -105,6 +116,14 @@ def uploaded_file(filename: str):
     if not safe_name or safe_name != filename:
         return ("Not found", 404)
     return send_from_directory(config.UPLOAD_DIR, safe_name)
+
+
+@app.route("/outputs/<path:filename>")
+def output_file(filename: str):
+    safe_name = secure_filename(filename)
+    if not safe_name or safe_name != filename:
+        return ("Not found", 404)
+    return send_from_directory(config.OUTPUT_DIR, safe_name)
 
 
 if __name__ == "__main__":

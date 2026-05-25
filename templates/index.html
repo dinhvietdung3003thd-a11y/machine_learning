@@ -34,12 +34,6 @@
         <section class="result-card">
           <h2>Kết quả dự đoán</h2>
 
-          {% if uploaded_image_url %}
-          <div class="result-image-wrap">
-            <img src="{{ uploaded_image_url }}" alt="Ảnh đã tải lên" class="result-image" />
-          </div>
-          {% endif %}
-
           {% set is_malignant = result.prediction == 'malignant' %}
           <p class="badge {{ 'badge-malignant' if is_malignant else 'badge-benign' }}">
             {{ result.prediction|upper }}
@@ -70,6 +64,41 @@
               <div class="bar-fill benign" style="width: {{ '%.2f'|format(result.benign_probability * 100) }}%;"></div>
             </div>
           </div>
+        </section>
+
+        <section class="gradcam-card">
+          <h2>Grad-CAM Visualization</h2>
+          <p class="gradcam-description">
+            Vùng sáng trên ảnh thể hiện khu vực mô hình tập trung khi đưa ra dự đoán.
+          </p>
+
+          {% if gradcam_warning %}
+          <div class="alert alert-warning">{{ gradcam_warning }}</div>
+          {% endif %}
+
+          {% if uploaded_image_url and gradcam_url %}
+          <div class="gradcam-grid">
+            <figure class="gradcam-item">
+              <figcaption>Ảnh gốc đã tải lên</figcaption>
+              <img src="{{ uploaded_image_url }}" alt="Ảnh gốc" class="result-image" />
+            </figure>
+            <figure class="gradcam-item">
+              <figcaption>Ảnh Grad-CAM overlay</figcaption>
+              <img src="{{ gradcam_url }}" alt="Ảnh Grad-CAM" class="result-image" />
+            </figure>
+          </div>
+          {% elif uploaded_image_url %}
+          <div class="gradcam-grid single">
+            <figure class="gradcam-item">
+              <figcaption>Ảnh gốc đã tải lên</figcaption>
+              <img src="{{ uploaded_image_url }}" alt="Ảnh gốc" class="result-image" />
+            </figure>
+          </div>
+          {% endif %}
+
+          <p class="gradcam-disclaimer">
+            Grad-CAM chỉ hỗ trợ giải thích mô hình, không phải bằng chứng y khoa.
+          </p>
         </section>
         {% endif %}
 
