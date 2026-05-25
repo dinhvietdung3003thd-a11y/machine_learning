@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # DATASET PATHS
 # =====================================================
 
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = BASE_DIR / "dataset"
 
 METADATA_DIR = DATA_DIR / "metadata"
 
@@ -115,7 +115,7 @@ HOST = "0.0.0.0"
 
 PORT = 5000
 
-DEBUG = True
+DEBUG = str(__import__("os").environ.get("FLASK_DEBUG", "0")).strip().lower() in {"1", "true", "yes", "on"}
 
 # =====================================================
 # GRADCAM
