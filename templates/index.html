@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skin Cancer Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <h1>Skin Cancer Detection</h1>
+        <p class="subtitle">
+          Tải ảnh tổn thương da để dự đoán nguy cơ benign/malignant bằng mô hình học máy.
+        </p>
+
+        <form method="POST" enctype="multipart/form-data" class="upload-form">
+          <label for="image" class="file-label">Chọn ảnh (JPG/JPEG/PNG)</label>
+          <input id="image" name="image" type="file" accept="image/png,image/jpeg" required />
+          <p id="selected-file" class="selected-file">Chưa chọn file.</p>
+
+          <div class="preview-wrap">
+            <img id="image-preview" class="preview-image hidden" alt="Ảnh xem trước" />
+          </div>
+
+          <button type="submit" class="btn-primary">Dự đoán</button>
+        </form>
+
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+
+        {% if result %}
+        <section class="result-card">
+          <h2>Kết quả dự đoán</h2>
+
+          {% if uploaded_image_url %}
+          <div class="result-image-wrap">
+            <img src="{{ uploaded_image_url }}" alt="Ảnh đã tải lên" class="result-image" />
+          </div>
+          {% endif %}
+
+          {% set is_malignant = result.prediction == 'malignant' %}
+          <p class="badge {{ 'badge-malignant' if is_malignant else 'badge-benign' }}">
+            {{ result.prediction|upper }}
+          </p>
+
+          <ul class="metrics">
+            <li><span>Confidence:</span> <strong>{{ '%.2f'|format(result.confidence * 100) }}%</strong></li>
+            <li>
+              <span>Malignant probability:</span>
+              <strong>{{ '%.2f'|format(result.malignant_probability * 100) }}%</strong>
+            </li>
+            <li>
+              <span>Benign probability:</span>
+              <strong>{{ '%.2f'|format(result.benign_probability * 100) }}%</strong>
+            </li>
+          </ul>
+
+          <div class="bar-group">
+            <div class="bar-label">Malignant</div>
+            <div class="bar-track">
+              <div class="bar-fill malignant" style="width: {{ '%.2f'|format(result.malignant_probability * 100) }}%;"></div>
+            </div>
+          </div>
+
+          <div class="bar-group">
+            <div class="bar-label">Benign</div>
+            <div class="bar-track">
+              <div class="bar-fill benign" style="width: {{ '%.2f'|format(result.benign_probability * 100) }}%;"></div>
+            </div>
+          </div>
+        </section>
+        {% endif %}
+
+        <p class="disclaimer">
+          Kết quả chỉ phục vụ mục đích học tập và không thay thế chẩn đoán y khoa.
+        </p>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>
