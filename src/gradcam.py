@@ -63,9 +63,27 @@ def _build_keras3_safe_grad_model(
         raise ValueError("No nested backbone model found for Grad-CAM generation.")
 
     input_tensor = model.inputs[0]
-    feature_map = backbone(input_tensor, training=False)
-    conv_output = feature_map
-    x = conv_output
+    target_layer_names = ("block_13_expand_relu", "out_relu", "Conv_1")
+    target_layer = None
+    for layer_name in target_layer_names:
+        try:
+            target_layer = backbone.get_layer(layer_name)
+            break
+        except ValueError:
+            continue
+
+    if target_layer is not None:
+        feature_extractor = tf.keras.Model(
+            inputs=backbone.input,
+            outputs=[target_layer.output, backbone.output],
+            name="gradcam_feature_extractor",
+        )
+        conv_output, backbone_output = feature_extractor(input_tensor, training=False)
+    else:
+        backbone_output = backbone(input_tensor, training=False)
+        conv_output = backbone_output
+
+    x = backbone_output
     for layer in model.layers[backbone_idx + 1 :]:
         x = layer(x)
 
@@ -125,12 +143,12 @@ def make_gradcam_heatmap(
 
 
 def _simple_colormap(heatmap_uint8: np.ndarray) -> np.ndarray:
-    """Apply a simple blue->yellow->red style map without extra dependencies."""
+    """Apply a warm yellow->red colormap without blue/purple tint."""
     x = heatmap_uint8.astype(np.float32) / 255.0
 
-    r = np.clip(1.5 * x - 0.2, 0.0, 1.0)
-    g = np.clip(1.5 * (1.0 - np.abs(x - 0.5) * 2.0), 0.0, 1.0)
-    b = np.clip(1.2 * (1.0 - x), 0.0, 1.0)
+    r = np.clip(0.9 + 0.1 * x, 0.0, 1.0)
+    g = np.clip(1.2 * (1.0 - x), 0.0, 1.0)
+    b = np.zeros_like(x)
 
     colored = np.stack([r, g, b], axis=-1)
     return (colored * 255).astype(np.uint8)
@@ -157,7 +175,11 @@ def save_gradcam_overlay(image_path: str | Path, heatmap: np.ndarray, output_pat
 
     heatmap_rgb = _simple_colormap(heatmap_resized)
 
-    alpha = 0.4
+    heatmap_strength = np.clip(heatmap_resized.astype(np.float32) / 255.0, 0.0, 1.0)
+    heatmap_strength = np.where(heatmap_strength < 0.2, 0.0, heatmap_strength)
+    alpha = heatmap_strength * 0.5
+    alpha = alpha[..., np.newaxis]
+
     overlay = np.clip(
         (1.0 - alpha) * original_arr.astype(np.float32) + alpha * heatmap_rgb.astype(np.float32),
         0,
