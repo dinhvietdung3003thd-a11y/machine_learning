@@ -56,7 +56,6 @@ def _find_nested_backbone_model(model: tf.keras.Model) -> tuple[tf.keras.Model, 
 
 def _build_keras3_safe_grad_model(
     model: tf.keras.Model,
-    target_conv_layer_name: str | None = None,
 ) -> tf.keras.Model:
     """Build a Grad-CAM model by replaying backbone + classifier head on one input tensor."""
     backbone, backbone_idx = _find_nested_backbone_model(model)
@@ -65,20 +64,8 @@ def _build_keras3_safe_grad_model(
 
     input_tensor = model.inputs[0]
     feature_map = backbone(input_tensor, training=False)
-
-    if target_conv_layer_name:
-        target_conv_layer = backbone.get_layer(target_conv_layer_name)
-    else:
-        target_conv_layer = find_last_conv_layer(backbone)
-
-    conv_extractor = tf.keras.Model(
-        inputs=backbone.inputs,
-        outputs=target_conv_layer.output,
-        name="gradcam_conv_extractor",
-    )
-    conv_output = conv_extractor(input_tensor, training=False)
-
-    x = feature_map
+    conv_output = feature_map
+    x = conv_output
     for layer in model.layers[backbone_idx + 1 :]:
         x = layer(x)
 
@@ -103,7 +90,6 @@ def make_gradcam_heatmap(
     """Generate normalized Grad-CAM heatmap in [0, 1]."""
     grad_model = _build_keras3_safe_grad_model(
         model=model,
-        target_conv_layer_name=last_conv_layer_name,
     )
 
     with tf.GradientTape() as tape:
