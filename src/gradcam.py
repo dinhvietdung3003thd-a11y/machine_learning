@@ -46,12 +46,48 @@ def find_last_conv_layer(model: tf.keras.Model):
     return conv_layer
 
 
-def _find_nested_backbone_model(model: tf.keras.Model) -> tf.keras.Model | None:
-    """Return the deepest nested model layer (e.g., MobileNetV2 backbone)."""
-    for layer in reversed(model.layers):
+def _find_nested_backbone_model(model: tf.keras.Model) -> tuple[tf.keras.Model, int] | tuple[None, None]:
+    """Return nested backbone model and its layer index in the outer model."""
+    for idx, layer in enumerate(model.layers):
         if isinstance(layer, tf.keras.Model):
-            return layer
-    return None
+            return layer, idx
+    return None, None
+
+
+def _build_keras3_safe_grad_model(
+    model: tf.keras.Model,
+    target_conv_layer_name: str | None = None,
+) -> tf.keras.Model:
+    """Build a Grad-CAM model by replaying backbone + classifier head on one input tensor."""
+    backbone, backbone_idx = _find_nested_backbone_model(model)
+    if backbone is None or backbone_idx is None:
+        raise ValueError("No nested backbone model found for Grad-CAM generation.")
+
+    input_tensor = model.inputs[0]
+    feature_map = backbone(input_tensor, training=False)
+
+    if target_conv_layer_name:
+        target_conv_layer = backbone.get_layer(target_conv_layer_name)
+    else:
+        target_conv_layer = find_last_conv_layer(backbone)
+
+    conv_extractor = tf.keras.Model(
+        inputs=backbone.inputs,
+        outputs=target_conv_layer.output,
+        name="gradcam_conv_extractor",
+    )
+    conv_output = conv_extractor(input_tensor, training=False)
+
+    x = feature_map
+    for layer in model.layers[backbone_idx + 1 :]:
+        x = layer(x)
+
+    predictions = x
+    return tf.keras.Model(
+        inputs=input_tensor,
+        outputs=[conv_output, predictions],
+        name="gradcam_model",
+    )
 
 
 def preprocess_image_for_gradcam(image_path: str | Path) -> np.ndarray:
@@ -65,26 +101,9 @@ def make_gradcam_heatmap(
     last_conv_layer_name: str | None = None,
 ) -> np.ndarray:
     """Generate normalized Grad-CAM heatmap in [0, 1]."""
-    # Keras 3 can raise graph-disconnection errors when targeting inner-layer
-    # tensors from nested backbones. Prefer nested backbone output (4D map),
-    # which is guaranteed to be connected to outer model.inputs.
-    target_feature_tensor = None
-
-    if last_conv_layer_name:
-        candidate_layer = model.get_layer(last_conv_layer_name)
-        target_feature_tensor = candidate_layer.output
-    else:
-        backbone = _find_nested_backbone_model(model)
-        if backbone is not None and len(backbone.output.shape) == 4:
-            target_feature_tensor = backbone.output
-
-    if target_feature_tensor is None:
-        conv_layer = find_last_conv_layer(model)
-        target_feature_tensor = conv_layer.output
-
-    grad_model = tf.keras.models.Model(
-        inputs=model.inputs,
-        outputs=[target_feature_tensor, model.output],
+    grad_model = _build_keras3_safe_grad_model(
+        model=model,
+        target_conv_layer_name=last_conv_layer_name,
     )
 
     with tf.GradientTape() as tape:
