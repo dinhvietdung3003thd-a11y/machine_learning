@@ -1,0 +1,145 @@
+# =====================================
+# Python
+# =====================================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# =====================================
+# Virtual Environment
+# =====================================
+
+venv/
+.venv/
+env/
+
+# =====================================
+# Jupyter
+# =====================================
+
+.ipynb_checkpoints/
+
+# =====================================
+# IDE
+# =====================================
+
+.vscode/
+.idea/
+
+# =====================================
+# Logs
+# =====================================
+
+*.log
+
+# =====================================
+# OS files
+# =====================================
+
+.DS_Store
+Thumbs.db
+
+# =====================================
+# Trained Models
+# =====================================
+
+models/*.h5
+models/*.keras
+models/*.pb
+models/*.tflite
+models/*.onnx
+models/*.pkl
+
+# Keep folder structure
+!models/.gitkeep
+
+# =====================================
+# Uploaded Images
+# =====================================
+
+uploads/*
+!uploads/.gitkeep
+
+# =====================================
+# Generated Outputs
+# =====================================
+
+outputs/*
+!outputs/.gitkeep
+
+# =====================================
+# Full Dataset
+# =====================================
+
+data/images/*
+!data/images/.gitkeep
+
+# =====================================
+# Temporary Files
+# =====================================
+
+*.tmp
+*.bak
+*.cache
+
+# =====================================
+# TensorBoard
+# =====================================
+
+logs/
+tensorboard_logs/
+
+# =====================================
+# Coverage
+# =====================================
+
+.coverage
+htmlcov/
+
+# =====================================
+# Build
+# =====================================
+
+dist/
+build/
+
+# =====================================
+# Environment Variables
+# =====================================
+
+.env
+.env.local
+
+__pycache__/
+*.pyc
+
+.venv/
+venv/
+env/
+
+uploads/*
+!uploads/.gitkeep
+
+outputs/*
+!outputs/.gitkeep
+
+models/*
+!models/.gitkeep
+
+dataset/images/*
+dataset/images_part_1/*
+dataset/images_part_2/*
+dataset/full_dataset/*
+dataset/raw_images/*
+dataset/processed/*
+
+*.h5
+*.keras
+*.pkl
+*.joblib
+
+.DS_Store
+.ipynb_checkpoints/
+*.log
