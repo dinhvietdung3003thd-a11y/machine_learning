@@ -6,6 +6,8 @@
   --primary: #2563eb;
   --danger: #d14343;
   --danger-soft: #fef2f2;
+  --warning: #9a6700;
+  --warning-soft: #fff8db;
   --benign: #1f9d55;
   --malignant: #f97316;
   --border: #e5e7eb;
@@ -29,7 +31,7 @@ body {
 
 .card {
   width: 100%;
-  max-width: 760px;
+  max-width: 860px;
   background: var(--card);
   border-radius: 14px;
   padding: 24px;
@@ -99,7 +101,14 @@ input[type="file"] {
   border: 1px solid #fecaca;
 }
 
-.result-card {
+.alert-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border: 1px solid #fde68a;
+}
+
+.result-card,
+.gradcam-card {
   margin-top: 22px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -159,6 +168,41 @@ input[type="file"] {
 .bar-fill.benign { background: var(--benign); }
 .bar-fill.malignant { background: var(--malignant); }
 
+.gradcam-description {
+  margin: 4px 0 12px;
+  color: var(--muted);
+}
+
+.gradcam-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.gradcam-grid.single {
+  grid-template-columns: 1fr;
+  max-width: 420px;
+}
+
+.gradcam-item {
+  margin: 0;
+}
+
+.gradcam-item figcaption {
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.gradcam-disclaimer {
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
 .disclaimer {
   margin-top: 20px;
   padding: 12px;
@@ -173,5 +217,8 @@ input[type="file"] {
   .metrics li {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .gradcam-grid {
+    grid-template-columns: 1fr;
   }
 }
